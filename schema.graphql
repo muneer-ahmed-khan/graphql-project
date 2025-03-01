@@ -1,9 +1,11 @@
+scalar DateTime
+
 schema {
   query: Query
   mutation: Mutation
 }
 
-# An interface to mark common fields
+# Interface for common fields
 interface Node {
   id: ID!
 }
@@ -21,6 +23,13 @@ enum PostStatus {
   ARCHIVED
 }
 
+enum NotificationType {
+  MESSAGE
+  COMMENT
+  LIKE
+  FOLLOW
+}
+
 # Types and relationships
 type User implements Node {
   id: ID!
@@ -29,6 +38,11 @@ type User implements Node {
   gender: Gender
   profile: Profile
   posts: [Post!]!
+  comments: [Comment!]!
+  likes: [Like!]!
+  messagesSent: [Message!]!
+  messagesReceived: [Message!]!
+  notifications: [Notification!]!
 }
 
 type Profile implements Node {
@@ -45,6 +59,9 @@ type Post implements Node {
   status: PostStatus!
   author: User!
   comments: [Comment!]!
+  likes: [Like!]!
+  tags: [Tag!]!
+  category: Category
 }
 
 type Comment implements Node {
@@ -54,8 +71,42 @@ type Comment implements Node {
   post: Post!
 }
 
-# Union to return heterogeneous search results
-union SearchResult = User | Post | Comment
+type Like implements Node {
+  id: ID!
+  user: User!
+  post: Post!
+}
+
+type Tag implements Node {
+  id: ID!
+  name: String!
+  posts: [Post!]!
+}
+
+type Category implements Node {
+  id: ID!
+  name: String!
+  posts: [Post!]!
+}
+
+type Message implements Node {
+  id: ID!
+  sender: User!
+  receiver: User!
+  content: String!
+  sentAt: DateTime!
+}
+
+type Notification implements Node {
+  id: ID!
+  user: User!
+  type: NotificationType!
+  message: String!
+  createdAt: DateTime!
+}
+
+# Union for heterogeneous search results
+union SearchResult = User | Post | Comment | Tag | Category
 
 # Input types for mutations
 input CreateUserInput {
@@ -64,10 +115,19 @@ input CreateUserInput {
   gender: Gender
 }
 
+input CreateProfileInput {
+  userId: ID!
+  bio: String
+  avatarUrl: String
+}
+
 input CreatePostInput {
   title: String!
   content: String!
+  status: PostStatus
   authorId: ID!
+  categoryId: ID
+  tags: [ID!]
 }
 
 input CreateCommentInput {
@@ -76,17 +136,58 @@ input CreateCommentInput {
   postId: ID!
 }
 
+input CreateLikeInput {
+  userId: ID!
+  postId: ID!
+}
+
+input SendMessageInput {
+  senderId: ID!
+  receiverId: ID!
+  content: String!
+}
+
+# New input types for Category and Tag
+input CreateCategoryInput {
+  name: String!
+  postIds: [ID!]
+}
+
+input CreateTagInput {
+  name: String!
+  postIds: [ID!]
+}
+
+input CreateNotificationInput {
+  userId: ID!
+  type: NotificationType!
+  message: String!
+}
+
 # Root Query
 type Query {
   node(id: ID!): Node
   search(text: String!): [SearchResult!]!
   getUser(id: ID!): User
   getPost(id: ID!): Post
+  getCategory(id: ID!): Category
+  getCategories: [Category!]!
+  getTag(id: ID!): Tag
+  getTags: [Tag!]!
+  getMessagesSent(userId: ID!): [Message!]!
+  getMessagesReceived(userId: ID!): [Message!]!
+  getNotifications(userId: ID!): [Notification!]!
 }
 
 # Root Mutation
 type Mutation {
   createUser(input: CreateUserInput!): User!
+  createProfile(input: CreateProfileInput!): Profile!
   createPost(input: CreatePostInput!): Post!
   createComment(input: CreateCommentInput!): Comment!
+  likePost(input: CreateLikeInput!): Like!
+  sendMessage(input: SendMessageInput!): Message!
+  createCategory(input: CreateCategoryInput!): Category!
+  createTag(input: CreateTagInput!): Tag!
+  createNotification(input: CreateNotificationInput!): Notification!
 }

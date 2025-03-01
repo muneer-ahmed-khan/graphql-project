@@ -1,5 +1,5 @@
 datasource db {
-    provider = "postgresql" // or your chosen provider
+    provider = "postgresql"
     url      = env("DATABASE_URL")
 }
 
@@ -8,13 +8,17 @@ generator client {
 }
 
 model User {
-    id      String    @id @default(uuid())
-    name    String
-    email   String    @unique
-    gender  Gender?
-    profile Profile?
-    posts   Post[]
-    Comment Comment[]
+    id               String         @id @default(uuid())
+    name             String
+    email            String         @unique
+    gender           Gender?
+    profile          Profile?
+    posts            Post[]
+    comments         Comment[]
+    likes            Like[]
+    messagesSent     Message[]      @relation("Sender")
+    messagesReceived Message[]      @relation("Receiver")
+    notifications    Notification[]
 }
 
 model Profile {
@@ -26,13 +30,17 @@ model Profile {
 }
 
 model Post {
-    id       String     @id @default(uuid())
-    title    String
-    content  String
-    status   PostStatus
-    authorId String
-    author   User       @relation(fields: [authorId], references: [id])
-    comments Comment[]
+    id         String     @id @default(uuid())
+    title      String
+    content    String
+    status     PostStatus
+    authorId   String
+    author     User       @relation(fields: [authorId], references: [id])
+    comments   Comment[]
+    likes      Like[]
+    tags       PostTag[]
+    category   Category?  @relation(fields: [categoryId], references: [id])
+    categoryId String?
 }
 
 model Comment {
@@ -42,6 +50,54 @@ model Comment {
     postId   String
     author   User   @relation(fields: [authorId], references: [id])
     post     Post   @relation(fields: [postId], references: [id])
+}
+
+model Like {
+    id     String @id @default(uuid())
+    userId String
+    postId String
+    user   User   @relation(fields: [userId], references: [id])
+    post   Post   @relation(fields: [postId], references: [id])
+}
+
+model Tag {
+    id    String    @id @default(uuid())
+    name  String    @unique
+    posts PostTag[]
+}
+
+model PostTag {
+    postId String
+    tagId  String
+    post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+    tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+    @@id([postId, tagId])
+}
+
+model Category {
+    id    String @id @default(uuid())
+    name  String @unique
+    posts Post[]
+}
+
+model Message {
+    id         String   @id @default(uuid())
+    senderId   String
+    receiverId String
+    content    String
+    sentAt     DateTime @default(now())
+    sender     User     @relation("Sender", fields: [senderId], references: [id])
+    receiver   User     @relation("Receiver", fields: [receiverId], references: [id])
+}
+
+model Notification {
+    id        String           @id @default(uuid())
+    userId    String
+    type      NotificationType
+    message   String
+    createdAt DateTime         @default(now())
+    user      User             @relation(fields: [userId], references: [id])
 }
 
 enum Gender {
@@ -54,4 +110,11 @@ enum PostStatus {
     DRAFT
     PUBLISHED
     ARCHIVED
+}
+
+enum NotificationType {
+    MESSAGE
+    COMMENT
+    LIKE
+    FOLLOW
 }
