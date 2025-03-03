@@ -1,0 +1,93 @@
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+# An interface to mark common fields
+interface Node {
+  id: ID!
+}
+
+# Enums for fixed value sets
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+# Types and relationships
+type User implements Node {
+  id: ID!
+  name: String!
+  email: String!
+  gender: Gender
+  profile: Profile
+  posts: [Post!]!
+}
+
+type Profile implements Node {
+  id: ID!
+  bio: String
+  avatarUrl: String
+  user: User!
+}
+
+type Post implements Node {
+  id: ID!
+  title: String!
+  content: String!
+  status: PostStatus!
+  author: User!
+  comments: [Comment!]!
+}
+
+type Comment implements Node {
+  id: ID!
+  text: String!
+  author: User!
+  post: Post!
+}
+
+# Union to return heterogeneous search results
+union SearchResult = User | Post | Comment
+
+# Input types for mutations
+input CreateUserInput {
+  name: String!
+  email: String!
+  gender: Gender
+}
+
+input CreatePostInput {
+  title: String!
+  content: String!
+  authorId: ID!
+}
+
+input CreateCommentInput {
+  text: String!
+  authorId: ID!
+  postId: ID!
+}
+
+# Root Query
+type Query {
+  node(id: ID!): Node
+  search(text: String!): [SearchResult!]!
+  getUser(id: ID!): User
+  getPost(id: ID!): Post
+}
+
+# Root Mutation
+type Mutation {
+  createUser(input: CreateUserInput!): User!
+  createPost(input: CreatePostInput!): Post!
+  createComment(input: CreateCommentInput!): Comment!
+}
+

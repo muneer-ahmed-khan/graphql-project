@@ -1,26 +1,29 @@
+scalar DateTime
 schema {
   query: Query
   mutation: Mutation
 }
-
-# An interface to mark common fields
+# Interface for common fields
 interface Node {
   id: ID!
 }
-
 # Enums for fixed value sets
 enum Gender {
   MALE
   FEMALE
   OTHER
 }
-
 enum PostStatus {
   DRAFT
   PUBLISHED
   ARCHIVED
 }
-
+enum NotificationType {
+  MESSAGE
+  COMMENT
+  LIKE
+  FOLLOW
+}
 # Types and relationships
 type User implements Node {
   id: ID!
@@ -29,15 +32,18 @@ type User implements Node {
   gender: Gender
   profile: Profile
   posts: [Post!]!
+  comments: [Comment!]!
+  likes: [Like!]!
+  messagesSent: [Message!]!
+  messagesReceived: [Message!]!
+  notifications: [Notification!]!
 }
-
 type Profile implements Node {
   id: ID!
   bio: String
   avatarUrl: String
   user: User!
 }
-
 type Post implements Node {
   id: ID!
   title: String!
@@ -45,35 +51,128 @@ type Post implements Node {
   status: PostStatus!
   author: User!
   comments: [Comment!]!
+  likes: [Like!]!
+  tags: [Tag!]!
+  category: Category
 }
-
 type Comment implements Node {
   id: ID!
   text: String!
   author: User!
   post: Post!
 }
-
-# Union to return heterogeneous search results
-union SearchResult = User | Post | Comment
-
+type Like implements Node {
+  id: ID!
+  user: User!
+  post: Post!
+}
+type Tag implements Node {
+  id: ID!
+  name: String!
+  posts: [Post!]!
+}
+type Category implements Node {
+  id: ID!
+  name: String!
+  posts: [Post!]!
+}
+type Message implements Node {
+  id: ID!
+  sender: User!
+  receiver: User!
+  content: String!
+  sentAt: DateTime!
+}
+type Notification implements Node {
+  id: ID!
+  user: User!
+  type: NotificationType!
+  message: String!
+  createdAt: DateTime!
+}
+# Union for heterogeneous search results
+union SearchResult = User | Post | Comment | Tag | Category
 # Input types for mutations
 input CreateUserInput {
   name: String!
   email: String!
   gender: Gender
 }
-
 input CreatePostInput {
   title: String!
   content: String!
+  status: PostStatus
   authorId: ID!
+  categoryId: ID
+  tags: [ID!]
 }
-
 input CreateCommentInput {
   text: String!
   authorId: ID!
   postId: ID!
+}
+input CreateLikeInput {
+  userId: ID!
+  postId: ID!
+}
+input SendMessageInput {
+  senderId: ID!
+  receiverId: ID!
+  content: String!
+}
+input CreateProfileInput {
+  userId: ID!
+  bio: String
+  avatarUrl: String
+}
+input CreateCategoryInput {
+  name: String!
+}
+input CreateTagInput {
+  name: String!
+}
+input CreateNotificationInput {
+  userId: ID!
+  type: NotificationType!
+  message: String!
+}
+
+
+input UpdateUserInput {
+  id: ID!
+  name: String!
+  email: String!
+  gender: Gender
+}
+input UpdatePostInput {
+  id: ID!
+  title: String!
+  content: String!
+  status: PostStatus
+  categoryId: ID
+  tags: [ID!]
+}
+input UpdateCommentInput {
+  id: ID!
+  text: String!
+}
+
+input UpdateProfileInput {
+  id: ID!
+  bio: String
+  avatarUrl: String
+}
+input UpdateCategoryInput {
+  id: ID!
+  name: String!
+}
+input UpdateTagInput {
+  id: ID!
+  name: String!
+}
+input UpdateMessageInput {
+  id: ID!
+  content: String!
 }
 
 # Root Query
@@ -82,11 +181,29 @@ type Query {
   search(text: String!): [SearchResult!]!
   getUser(id: ID!): User
   getPost(id: ID!): Post
+  getCategory(id: ID!): Category
+  getMessagesSent(userId: ID!): [Message!]!
+  getMessagesReceived(userId: ID!): [Message!]!
+  getNotifications(userId: ID!): [Notification!]!
 }
-
 # Root Mutation
 type Mutation {
   createUser(input: CreateUserInput!): User!
   createPost(input: CreatePostInput!): Post!
   createComment(input: CreateCommentInput!): Comment!
+  likePost(input: CreateLikeInput!): Like!
+  sendMessage(input: SendMessageInput!): Message!
+  createProfile(input: CreateProfileInput!): Profile!
+  createCategory(input: CreateCategoryInput!): Category!
+  createTag(input: CreateTagInput!): Tag!
+  createNotification(input: CreateNotificationInput!): Notification!
+
+  updateUser(input: UpdateUserInput!): User!
+  updatePost(input: UpdatePostInput!): Post!
+  updateComment(input: UpdateCommentInput!): Comment!
+  updateProfile(input: UpdateProfileInput!): Profile!
+  updateCategory(input: UpdateCategoryInput!): Category!
+  updateTag(input: UpdateTagInput!): Tag!
+  updateMessage(input: UpdateMessageInput!): Message!
+
 }

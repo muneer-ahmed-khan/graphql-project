@@ -1,0 +1,57 @@
+datasource db {
+    provider = "postgresql" // or your chosen provider
+    url      = env("DATABASE_URL")
+}
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+model User {
+    id      String    @id @default(uuid())
+    name    String
+    email   String    @unique
+    gender  Gender?
+    profile Profile?
+    posts   Post[]
+    Comment Comment[]
+}
+
+model Profile {
+    id        String  @id @default(uuid())
+    bio       String?
+    avatarUrl String?
+    userId    String  @unique
+    user      User    @relation(fields: [userId], references: [id])
+}
+
+model Post {
+    id       String     @id @default(uuid())
+    title    String
+    content  String
+    status   PostStatus
+    authorId String
+    author   User       @relation(fields: [authorId], references: [id])
+    comments Comment[]
+}
+
+model Comment {
+    id       String @id @default(uuid())
+    text     String
+    authorId String
+    postId   String
+    author   User   @relation(fields: [authorId], references: [id])
+    post     Post   @relation(fields: [postId], references: [id])
+}
+
+enum Gender {
+    MALE
+    FEMALE
+    OTHER
+}
+
+enum PostStatus {
+    DRAFT
+    PUBLISHED
+    ARCHIVED
+}
